@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  author: tjend
+  description: Ansible role to create letsencrypt certificates that integrate with nginx.
+  company:
+  license: MIT
+  min_ansible_version: 2.4
+  platforms:
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - letsencrypt
+    - nginx
+dependencies: []
