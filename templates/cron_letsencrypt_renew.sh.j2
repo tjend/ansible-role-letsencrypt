@@ -1,0 +1,17 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# run this script daily to renew any letsencrypt certs that need renewing
+# renew cert if it expires within 30 days
+
+{% for cert in letsencrypt_certificates %}
+echo "$(date) checking for cert update for {{ cert.domains[0] }}."
+# {{ cert.domains[0] }}
+{% if cert.http_verification is undefined or cert.http_verification == false %}
+CLOUDFLARE_EMAIL="{{ cert.cloudflare_email | mandatory }}" CLOUDFLARE_API_KEY="{{ cert.cloudflare_api_key | mandatory }}" {{ letsencrypt_bin_file }} --email="{{ cert.account | mandatory }}" --domains {{ ' --domains '.join(cert.domains) }} --dns="cloudflare" renew --days 30
+{% else %}
+{{ letsencrypt_bin_file }} --email="{{ cert.account | mandatory }}" --domains {{ ' --domains '.join(cert.domains) }} --http="127.0.0.1:8181" --exclude "tls-sni-01" renew --days 30
+{% endif %}
+
+{% endfor %}
+# reload nginx to pick up the new certificate
+sudo service nginx reload

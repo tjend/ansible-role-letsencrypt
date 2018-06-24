@@ -1,0 +1,11 @@
+---
+
+# letsencrypt paths
+letsencrypt_base_dir: /opt/letsencrypt
+letsencrypt_bin_file: "{{ letsencrypt_base_dir }}/bin/lego"
+
+# letsencrypt client(lego) release url
+letsencrypt_client_url: https://github.com/xenolf/lego/releases/download/v1.0.1/lego_v1.0.1_linux_amd64.tar.gz
+
+# user to run the letsencrypt client as
+letsencrypt_user: letsencrypt

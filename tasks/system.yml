@@ -1,0 +1,104 @@
+---
+
+- name: create the letsencrypt user
+  user:
+    name: "{{ letsencrypt_user }}"
+    home: "{{ letsencrypt_base_dir }}"
+    createhome: no
+
+- name: create the letsencrypt certificates directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ letsencrypt_user }}"
+    group: www-data
+    mode: 02750
+    recurse: yes
+  with_items:
+  - "{{ letsencrypt_base_dir }}/.lego/certificates"
+
+- name: create the letsencrypt client binary directory
+  file:
+    path: "{{ letsencrypt_base_dir }}/bin"
+    state: directory
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_user }}"
+    mode: 0700
+
+- name: get the compressed letsencrypt client binary
+  unarchive:
+    src: "{{ letsencrypt_client_url }}"
+    dest: "{{ letsencrypt_base_dir }}/bin"
+    remote_src: true
+    creates: "{{ letsencrypt_bin_file }}"
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_user }}"
+
+- name: create the letsencrypt account directories
+  file:
+    path: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account }}/keys"
+    state: directory
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_user }}"
+    mode: 0700
+    recurse: yes
+  with_items: "{{ letsencrypt_accounts }}"
+
+- name: create the account json files
+  copy:
+    content: "{{ item.json }}"
+    dest: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/account.json"
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_user }}"
+    mode: 0700
+  when: item.json is defined
+  with_items: "{{ letsencrypt_accounts }}"
+
+- name: create the account key files
+  copy:
+    content: "{{ item.key }}"
+    dest: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/keys/{{ item.account }}.key"
+    owner: "{{ letsencrypt_user }}"
+    group: "{{ letsencrypt_user }}"
+    mode: 0700
+  diff: no
+  when: item.key is defined
+  with_items: "{{ letsencrypt_accounts }}"
+
+# Create an account json and key file if none is given.
+# To reuse the account key, add the account key and json file to the 'letsencrypt_account' variable.
+- name: generate a letsencrypt account key and json file
+  command: "{{ letsencrypt_bin_file }} --accept-tos --email=\"{{ item.account | mandatory }}\" run"
+  args:
+    chdir: "{{ letsencrypt_base_dir }}"
+    creates: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account }}/keys/{{ item.account }}.key"
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+  with_items: "{{ letsencrypt_accounts }}"
+  ignore_errors: yes # the lego command fails as it always wants to create a certificate, we can ignore this failure as the account json and key still get created
+
+- name: get the contents of newly created account json files
+  slurp:
+    src: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/account.json"
+  register: letsencrypt_account_json_created_content
+  when: item.json is not defined
+  with_items: "{{ letsencrypt_accounts }}"
+
+- name: show the contents of newly created account json files
+  debug:
+    msg: "{{ item.content | b64decode }}"
+  when: item.content is defined
+  with_items: "{{ letsencrypt_account_json_created_content.results | default([]) }}"
+
+- name: get the contents of newly created account key files
+  slurp:
+    src: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/keys/{{ item.account }}.key"
+  register: letsencrypt_account_key_created_content
+  when: item.key is not defined
+  with_items: "{{ letsencrypt_accounts }}"
+
+- name: show the contents of newly created account key files
+  debug:
+    msg: "{{ item.content | b64decode }}"
+  when: item.content is defined
+  with_items: "{{ letsencrypt_account_key_created_content.results | default([]) }}"

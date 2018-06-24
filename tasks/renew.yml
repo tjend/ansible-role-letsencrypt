@@ -1,0 +1,22 @@
+---
+
+- name: add cron script to renew letsencrypt certs
+  template:
+    dest: "{{ letsencrypt_base_dir }}/bin/cron_letsencrypt_renew.sh"
+    mode: 0755
+    src: cron_letsencrypt_renew.sh.j2
+
+- name: daily cron to check/update letsencrypt certs at 2:05 UTC
+  cron:
+    cron_file: letsencrypt
+    hour: 2
+    job: "{{ letsencrypt_base_dir }}/bin/cron_letsencrypt_renew.sh >> {{ letsencrypt_base_dir }}/cron_letsencrypt_renew.log 2>&1"
+    minute: 5
+    name: cron-letsencrypt-renew
+    user: "{{ letsencrypt_user }}"
+
+- name: "allow {{ letsencrypt_user }} to reload nginx"
+  template:
+    dest: /etc/sudoers.d/letsencrypt
+    mode: 0755
+    src: sudoers_letsencrypt.j2

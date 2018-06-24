@@ -1,0 +1,40 @@
+---
+
+- name: "create letsencrypt certificate(using DNS-01) for {{ ', '.join(item.domains) }}"
+  command: "{{ letsencrypt_bin_file }} --email=\"{{ item.account | mandatory }}\" --domains {{ ' --domains '.join(item.domains) }} --dns=\"cloudflare\" run"
+  args:
+    chdir: "{{ letsencrypt_base_dir }}"
+    creates: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.crt"
+  environment:
+    CLOUDFLARE_EMAIL: "{{ item.cloudflare_email | mandatory }}"
+    CLOUDFLARE_API_KEY: "{{ item.cloudflare_api_key | mandatory }}"
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+  when: item.http_verification is undefined or item.http_verification == false
+
+- name: "create letsencrypt certificate(using HTTP-01) for {{ ', '.join(item.domains) }}"
+  command: "{{ letsencrypt_bin_file }} --email=\"{{ item.account | mandatory }}\" --domains {{ ' --domains '.join(item.domains) }} --http=\"127.0.0.1:8181\" --exclude \"tls-sni-01\" run"
+  args:
+    chdir: "{{ letsencrypt_base_dir }}"
+    creates: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.crt"
+  become: yes
+  become_user: "{{ letsencrypt_user }}"
+  when: item.http_verification is defined and item.http_verification == true
+
+- name: "allow www-data to read certificate(group read only as directory is already SETGID) for {{ item.domains[0] }}"
+  file:
+    path: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.crt"
+    mode: 0640
+  notify: reload nginx
+
+- name: "allow www-data to read key(group read only as directory is already SETGID) for {{ item.domains[0] }}"
+  file:
+    path: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.key"
+    mode: 0640
+  notify: reload nginx
+
+- name: "generate https nginx snippet for {{ item.domains[0] }}"
+  template:
+    dest: "/etc/nginx/snippets/{{ item.domains[0] }}.https.conf"
+    src: domain_https.conf
+  notify: reload nginx

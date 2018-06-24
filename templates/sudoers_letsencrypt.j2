@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+
+# allow the {{ letsencrypt_user }} user to reload nginx
+{{ letsencrypt_user }} ALL=(ALL) NOPASSWD:/usr/sbin/service nginx reload

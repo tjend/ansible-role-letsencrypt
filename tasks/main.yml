@@ -1,0 +1,12 @@
+---
+
+- include_tasks: system.yml
+- include_tasks: nginx.yml
+
+- meta: flush_handlers # nginx has to be reloaded for http acme challenges to work
+
+# create each certificate
+- include_tasks: certificate.yml
+  with_items: "{{ letsencrypt_certificates | mandatory }}"
+
+- include_tasks: renew.yml

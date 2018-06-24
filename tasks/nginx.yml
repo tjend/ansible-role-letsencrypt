@@ -1,0 +1,8 @@
+---
+
+# when using http challenges, add "include snippets/acme_well_known.conf*;" to the nginx vhost
+- name: create global ACME location directive for nginx
+  template:
+    src: acme_well_known.conf
+    dest: /etc/nginx/snippets/acme_well_known.conf
+  notify: reload nginx
