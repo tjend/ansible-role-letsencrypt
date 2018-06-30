@@ -13,8 +13,9 @@
     owner: "{{ letsencrypt_user }}"
     group: www-data
     mode: 02750
-    recurse: yes
   with_items:
+  - "{{ letsencrypt_base_dir }}"
+  - "{{ letsencrypt_base_dir }}/.lego"
   - "{{ letsencrypt_base_dir }}/.lego/certificates"
 
 - name: create the letsencrypt client binary directory
