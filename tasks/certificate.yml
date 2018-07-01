@@ -26,12 +26,14 @@
     path: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.crt"
     mode: 0640
   notify: reload nginx
+  when: not ansible_check_mode
 
 - name: "allow www-data to read key(group read only as directory is already SETGID) for {{ item.domains[0] }}"
   file:
     path: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.key"
     mode: 0640
   notify: reload nginx
+  when: not ansible_check_mode
 
 - name: "generate https nginx snippet for {{ item.domains[0] }}"
   template:
