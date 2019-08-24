@@ -2,6 +2,8 @@
 
 This role installs and configures the lego letsencrypt client to create https certificates for integration with nginx. Both DNS-01 and HTTP-01 letsencrypt verification can be used.
 
+Note that if the nginx snippet will serve both IPv6 and IPv4, you should use the "ipv6only=false" parameter in your default vhost - see https://stefanchrist.eu/blog/2015_01_21/Using%20ipv6only%20in%20Nginx.xhtml and http://nginx.org/en/docs/http/ngx_http_core_module.html#listen.
+
 If you don't provide the account json and key in the 'letsencrypt_accounts' variable, a new account json and key files will be created. You can then reuse the newly created account json and key by adding them to the 'letsencrypt_accounts' variable.
 
 # Example of using dns verification
