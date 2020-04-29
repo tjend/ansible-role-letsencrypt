@@ -1,0 +1,12 @@
+{
+	"email": "{{ item.account_email }}",
+	"registration": {
+		"body": {
+			"status": "valid",
+			"contact": [
+				"mailto:{{ item.account_email }}"
+			]
+		},
+		"uri": "https://acme-v02.api.letsencrypt.org/acme/acct/{{ item.account_number }}"
+	}
+}

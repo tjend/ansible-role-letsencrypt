@@ -1,12 +1,19 @@
 ---
 
-- include_tasks: system.yml
-- include_tasks: nginx.yml
+- name: system
+  include_tasks: system.yml
+
+- name: nginx
+  include_tasks: nginx.yml
 
 - meta: flush_handlers # nginx has to be reloaded for http acme challenges to work
 
 # create each certificate
-- include_tasks: certificate.yml
-  with_items: "{{ letsencrypt_certificates | mandatory }}"
+- name: certificate
+  include_tasks: certificate.yml
+  loop: "{{ letsencrypt_certificates | mandatory }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
-- include_tasks: renew.yml
+- name: renew
+  include_tasks: renew.yml

@@ -6,14 +6,14 @@
     home: "{{ letsencrypt_base_dir }}"
     createhome: no
 
-- name: create the letsencrypt certificates directory
+- name: create the letsencrypt base and certificates directories
   file:
     path: "{{ item }}"
     state: directory
     owner: "{{ letsencrypt_user }}"
     group: www-data
     mode: 02750
-  with_items:
+  loop:
   - "{{ letsencrypt_base_dir }}"
   - "{{ letsencrypt_base_dir }}/.lego"
   - "{{ letsencrypt_base_dir }}/.lego/certificates"
@@ -35,71 +35,91 @@
     owner: "{{ letsencrypt_user }}"
     group: "{{ letsencrypt_user }}"
 
+- name: delete old acme v1 directories
+  file:
+    path: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v01.api.letsencrypt.org"
+    state: absent
+
 - name: create the letsencrypt account directories
   file:
-    path: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account }}/keys"
+    path: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email }}/keys"
     state: directory
     owner: "{{ letsencrypt_user }}"
     group: "{{ letsencrypt_user }}"
     mode: 0700
     recurse: yes
-  with_items: "{{ letsencrypt_accounts }}"
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
-- name: create the account json files
-  copy:
-    content: "{{ item.json }}"
-    dest: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/account.json"
-    owner: "{{ letsencrypt_user }}"
+- name: copy the account json into place
+  template:
+    dest: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email | mandatory }}/account.json"
     group: "{{ letsencrypt_user }}"
-    mode: 0700
-  when: item.json is defined
-  with_items: "{{ letsencrypt_accounts }}"
+    owner: "{{ letsencrypt_user }}"
+    mode: 0600
+    src: account.json.j2
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
-- name: create the account key files
+- name: copy the account key into place
   copy:
     content: "{{ item.key }}"
-    dest: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/keys/{{ item.account }}.key"
+    dest: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email | mandatory }}/keys/{{ item.account_email }}.key"
     owner: "{{ letsencrypt_user }}"
     group: "{{ letsencrypt_user }}"
     mode: 0700
   diff: no
   when: item.key is defined
-  with_items: "{{ letsencrypt_accounts }}"
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
-# Create an account json and key file if none is given.
-# To reuse the account key, add the account key and json file to the 'letsencrypt_account' variable.
-- name: generate a letsencrypt account key and json file
-  command: "{{ letsencrypt_bin_file }} --accept-tos --email=\"{{ item.account | mandatory }}\" run"
+# Create an account number and key if none is given.
+# To reuse the account number and key, add the account number and key to the 'letsencrypt_account' variable.
+- name: generate a letsencrypt account number and key
+  command: "{{ letsencrypt_bin_file }} --accept-tos --email=\"{{ item.account_email | mandatory }}\" run"
   args:
     chdir: "{{ letsencrypt_base_dir }}"
-    creates: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account }}/keys/{{ item.account }}.key"
+    creates: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email }}/keys/{{ item.account_email }}.key"
   become: yes
   become_user: "{{ letsencrypt_user }}"
-  with_items: "{{ letsencrypt_accounts }}"
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
   ignore_errors: yes # the lego command fails as it always wants to create a certificate, we can ignore this failure as the account json and key still get created
 
-- name: get the contents of newly created account json files
+- name: get the contents of newly created account json
   slurp:
-    src: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/account.json"
+    src: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email | mandatory }}/account.json"
   register: letsencrypt_account_json_created_content
-  when: item.json is not defined
-  with_items: "{{ letsencrypt_accounts }}"
+  when: item.key is not defined
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
-- name: show the contents of newly created account json files
+- name: show the contents of newly created account json(the account number is at the end of the uri)
   debug:
     msg: "{{ item.content | b64decode }}"
   when: item.content is defined
-  with_items: "{{ letsencrypt_account_json_created_content.results | default([]) }}"
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
-- name: get the contents of newly created account key files
+- name: get the contents of newly created account key
   slurp:
-    src: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account | mandatory }}/keys/{{ item.account }}.key"
+    src: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email | mandatory }}/keys/{{ item.account_email }}.key"
   register: letsencrypt_account_key_created_content
   when: item.key is not defined
-  with_items: "{{ letsencrypt_accounts }}"
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"
 
 - name: show the contents of newly created account key files
   debug:
     msg: "{{ item.content | b64decode }}"
   when: item.content is defined
-  with_items: "{{ letsencrypt_account_key_created_content.results | default([]) }}"
+  loop: "{{ letsencrypt_accounts }}"
+  loop_control:
+    label: "{{ item.account_email }}"

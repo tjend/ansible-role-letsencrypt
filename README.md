@@ -4,7 +4,7 @@ This role installs and configures the lego letsencrypt client to create https ce
 
 Note that if the nginx snippet will serve both IPv6 and IPv4, you should use the "ipv6only=false" parameter in your default vhost - see https://stefanchrist.eu/blog/2015_01_21/Using%20ipv6only%20in%20Nginx.xhtml and http://nginx.org/en/docs/http/ngx_http_core_module.html#listen.
 
-If you don't provide the account json and key in the 'letsencrypt_accounts' variable, a new account json and key files will be created. You can then reuse the newly created account json and key by adding them to the 'letsencrypt_accounts' variable.
+If you don't provide the account key in the 'letsencrypt_accounts' variable, a new account key will be created. You can then reuse the newly created account key by adding them to the 'letsencrypt_accounts' variable.
 
 # Example of using dns verification
     roles:
@@ -12,27 +12,17 @@ If you don't provide the account json and key in the 'letsencrypt_accounts' vari
 
     vars:
       letsencrypt_accounts:
-        - account: letsencrypt_account1@domain1.com
+        - account_email: <letsencrypt account email>
+          account_number: <letsencrypt account number>
           cloudflare_email: <cloudflare email address>
           cloudflare_api_key: <cloudflare api key>
-          json: |
-            {
-              "email": "letsencrypt_account1@domain1.com",
-              "registration": {
-                ...
-                "terms_of_service": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf"
-              }
-            }
           key: |
             -----BEGIN EC PRIVATE KEY-----
             ...
             -----END EC PRIVATE KEY-----
-        - account: letsencrypt_account2@domain2.com
       letsencrypt_certificates:
-        - account: letsencrypt_account1@domain1.com
+        - account: <letsencrypt account email>
           domains: [ primary-domain.com, other-domains.com ]
-        - account: letsencrypt_account2@domain2.com
-          domains: [ primary-domain2.com, other-domains2.com ]
 
       nginx_vhosts:
         extra_parameters: |
@@ -45,23 +35,16 @@ If you don't provide the account json and key in the 'letsencrypt_accounts' vari
 
     vars:
       letsencrypt_accounts:
-        - account: letsencrypt_account1@domain1.com
-          json: |
-            {
-              "email": "letsencrypt_account1@domain1.com",
-              "registration": {
-                ...
-                "terms_of_service": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf"
-              }
-            }
+        - account_email: <letsencrypt account email>
+        - account_number: <letsencrypt account number>
           key: |
             -----BEGIN EC PRIVATE KEY-----
             ...
             -----END EC PRIVATE KEY-----
       letsencrypt_certificates:
-      - account: letsencrypt_account1@domain1.com
-        domains: [ primary-domain.com, other-domains.com ]
-        http_verification: true
+        - account: <letsencrypt account email>
+          domains: [ primary-domain.com, other-domains.com ]
+          http_verification: true
 
       nginx_vhosts:
         extra_parameters: |

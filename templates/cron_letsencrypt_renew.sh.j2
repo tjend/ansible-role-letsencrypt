@@ -4,12 +4,12 @@
 # renew cert if it expires within 30 days
 
 {% for cert in letsencrypt_certificates %}
-echo "$(date) checking for cert update for {{ cert.domains[0] }}."
-# {{ cert.domains[0] }}
+echo "$(date) checking for cert update for {{ ', '.join(cert.domains) }}."
+# {{ ', '.join(cert.domains) }}
 {% if cert.http_verification is undefined or cert.http_verification == false %}
-CLOUDFLARE_EMAIL="{{ cert.cloudflare_email | mandatory }}" CLOUDFLARE_API_KEY="{{ cert.cloudflare_api_key | mandatory }}" {{ letsencrypt_bin_file }} --email="{{ cert.account | mandatory }}" --domains {{ ' --domains '.join(cert.domains) }} --dns="cloudflare" renew --days 30
+CLOUDFLARE_EMAIL="{{ cert.cloudflare_email | mandatory }}" CLOUDFLARE_API_KEY="{{ cert.cloudflare_api_key | mandatory }}" {{ letsencrypt_bin_file }} --email="{{ cert.account_email | mandatory }}" --domains {{ ' --domains '.join(cert.domains) }} --dns="cloudflare" renew --days 30
 {% else %}
-{{ letsencrypt_bin_file }} --email="{{ cert.account | mandatory }}" --domains {{ ' --domains '.join(cert.domains) }} --http="127.0.0.1:8181" --exclude "tls-sni-01" renew --days 30
+{{ letsencrypt_bin_file }} --email="{{ cert.account_email | mandatory }}" --domains {{ ' --domains '.join(cert.domains) }} --http="127.0.0.1:8181" renew --days 30
 {% endif %}
 
 {% endfor %}
