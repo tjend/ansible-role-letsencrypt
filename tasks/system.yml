@@ -59,6 +59,7 @@
     owner: "{{ letsencrypt_user }}"
     mode: 0600
     src: account.json.j2
+  when: item.account_number is defined
   loop: "{{ letsencrypt_accounts }}"
   loop_control:
     label: "{{ item.account_email }}"
@@ -79,7 +80,7 @@
 # Create an account number and key if none is given.
 # To reuse the account number and key, add the account number and key to the 'letsencrypt_account' variable.
 - name: generate a letsencrypt account number and key
-  command: "{{ letsencrypt_bin_file }} --accept-tos --email=\"{{ item.account_email | mandatory }}\" run"
+  command: "{{ letsencrypt_bin_file }} --accept-tos --email=\"{{ item.account_email | mandatory }}\" --domains example.com --http run"
   args:
     chdir: "{{ letsencrypt_base_dir }}"
     creates: "{{ letsencrypt_base_dir }}/.lego/accounts/acme-v02.api.letsencrypt.org/{{ item.account_email }}/keys/{{ item.account_email }}.key"
