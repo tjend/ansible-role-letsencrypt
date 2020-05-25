@@ -13,7 +13,7 @@
   when: item.http_verification is undefined or item.http_verification == false
 
 - name: "create letsencrypt certificate(using HTTP-01) for {{ ', '.join(item.domains) }}"
-  command: "{{ letsencrypt_bin_file }} --email=\"{{ item.account_email | mandatory }}\" --domains {{ ' --domains '.join(item.domains) }} --http=\"127.0.0.1:8181\" --exclude \"tls-sni-01\" run"
+  command: "{{ letsencrypt_bin_file }} --email=\"{{ item.account_email | mandatory }}\" --domains {{ ' --domains '.join(item.domains) }} --http --http.port=\"127.0.0.1:8181\" run"
   args:
     chdir: "{{ letsencrypt_base_dir }}"
     creates: "{{ letsencrypt_base_dir }}/.lego/certificates/{{ item.domains[0] }}.crt"
