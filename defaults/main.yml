@@ -7,5 +7,8 @@ letsencrypt_bin_file: "{{ letsencrypt_base_dir }}/bin/lego"
 # letsencrypt client(lego) release url
 letsencrypt_client_url: https://github.com/go-acme/lego/releases/download/v3.5.0/lego_v3.5.0_linux_amd64.tar.gz
 
+# add nginx listen directive to the nginx snippet
+letsencrypt_nginx_snippet_listen: true
+
 # user to run the letsencrypt client as
 letsencrypt_user: letsencrypt
